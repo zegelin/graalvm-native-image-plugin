@@ -37,17 +37,18 @@ public class ClassUsage implements Comparable<ClassUsage>, MergeableConfig<Class
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     public SortedSet<FieldUsage> fields = Collections.emptySortedSet();
 
-    @Nullable
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public Boolean allDeclaredFields;
 
-    @Nullable
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public Boolean allDeclaredMethods;
+    public boolean allDeclaredFields;
+    public boolean allPublicFields;
 
-    @Nullable
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public Boolean allDeclaredConstructors;
+    public boolean allDeclaredMethods;
+    public boolean allPublicMethods;
+
+    public boolean allDeclaredConstructors;
+    public boolean allPublicConstructors;
+
+    public boolean allDeclaredClasses;
+    public boolean allPublicClasses;
 
     public ClassUsage() {
     }
@@ -56,15 +57,26 @@ public class ClassUsage implements Comparable<ClassUsage>, MergeableConfig<Class
             @NotNull String name,
             @NotNull SortedSet<MethodUsage> methods,
             @NotNull SortedSet<FieldUsage> fields, 
-            @Nullable Boolean allDeclaredFields,
-            @Nullable Boolean allDeclaredMethods,
-            @Nullable Boolean allDeclaredConstructors) {
+            boolean allDeclaredFields, boolean allPublicFields,
+            boolean allDeclaredMethods, boolean allPublicMethods,
+            boolean allDeclaredConstructors, boolean allPublicConstructors,
+            boolean allDeclaredClasses, boolean allPublicClasses) {
         this.name = name;
+
         this.methods = methods;
         this.fields = fields;
+
         this.allDeclaredFields = allDeclaredFields;
+        this.allPublicFields = allPublicFields;
+
         this.allDeclaredMethods = allDeclaredMethods;
+        this.allPublicMethods = allPublicMethods;
+
         this.allDeclaredConstructors = allDeclaredConstructors;
+        this.allPublicConstructors = allPublicConstructors;
+
+        this.allDeclaredClasses = allDeclaredClasses;
+        this.allPublicClasses = allPublicClasses;
     }
 
     ClassUsage(@NotNull String name) {
@@ -106,35 +118,47 @@ public class ClassUsage implements Comparable<ClassUsage>, MergeableConfig<Class
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) return true;
-        if (!(o instanceof ClassUsage)) return false;
-        ClassUsage that = (ClassUsage) o;
-        return name.equals(that.name) &&
+        if (o == null || getClass() != o.getClass()) return false;
+        final ClassUsage that = (ClassUsage) o;
+        return allDeclaredFields == that.allDeclaredFields &&
+                allPublicFields == that.allPublicFields &&
+                allDeclaredMethods == that.allDeclaredMethods &&
+                allPublicMethods == that.allPublicMethods &&
+                allDeclaredConstructors == that.allDeclaredConstructors &&
+                allPublicConstructors == that.allPublicConstructors &&
+                allDeclaredClasses == that.allDeclaredClasses &&
+                allPublicClasses == that.allPublicClasses &&
+                name.equals(that.name) &&
                 methods.equals(that.methods) &&
-                fields.equals(that.fields) &&
-                Objects.equals(allDeclaredFields, that.allDeclaredFields) &&
-                Objects.equals(allDeclaredMethods, that.allDeclaredMethods) &&
-                Objects.equals(allDeclaredConstructors, that.allDeclaredConstructors);
+                fields.equals(that.fields);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, methods, fields, allDeclaredFields, allDeclaredMethods, allDeclaredConstructors);
+        return Objects.hash(name, methods, fields,
+                allDeclaredFields, allPublicFields,
+                allDeclaredMethods, allPublicMethods,
+                allDeclaredConstructors, allPublicConstructors,
+                allDeclaredClasses, allPublicClasses);
     }
 
-    @SuppressWarnings("StringBufferReplaceableByString")
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ClassUsage{");
-        sb.append("name='").append(name).append('\'');
-        sb.append(", methods=").append(methods);
-        sb.append(", fields=").append(fields);
-        sb.append(", allDeclaredFields=").append(allDeclaredFields);
-        sb.append(", allDeclaredMethods=").append(allDeclaredMethods);
-        sb.append(", allDeclaredConstructors=").append(allDeclaredConstructors);
-        sb.append('}');
-        return sb.toString();
+        return "ClassUsage{" +
+                "name='" + name + '\'' +
+                ", methods=" + methods +
+                ", fields=" + fields +
+                ", allDeclaredFields=" + allDeclaredFields +
+                ", allPublicFields=" + allPublicFields +
+                ", allDeclaredMethods=" + allDeclaredMethods +
+                ", allPublicMethods=" + allPublicMethods +
+                ", allDeclaredConstructors=" + allDeclaredConstructors +
+                ", allPublicConstructors=" + allPublicConstructors +
+                ", allDeclaredClasses=" + allDeclaredClasses +
+                ", allPublicClasses=" + allPublicClasses +
+                '}';
     }
 
     @Override
@@ -145,15 +169,31 @@ public class ClassUsage implements Comparable<ClassUsage>, MergeableConfig<Class
     @Override
     public ClassUsage mergeWith(ClassUsage other) {
         if (!this.name.equals(other.name)) {
-            throw new IllegalArgumentException("A parameter has the same name with this[" + this.name + "], but [" + other.name + "].");
+            throw new IllegalArgumentException("Cannot merge class named " + this.name + " with " + other.name + ".");
         }
-        Boolean declaredFields = this.allDeclaredFields == null ? other.allDeclaredFields : this.allDeclaredFields;
-        Boolean declaredConstructors = this.allDeclaredConstructors == null ? other.allDeclaredConstructors : this.allDeclaredConstructors;
-        Boolean declaredMethods = this.allDeclaredMethods == null ? other.allDeclaredMethods : this.allDeclaredMethods;
+
+        boolean allDeclaredFields = this.allDeclaredFields || other.allDeclaredFields;
+        boolean allPublicFields = this.allPublicFields || other.allPublicFields;
+
+        boolean allDeclaredMethods = this.allDeclaredMethods || other.allDeclaredMethods;
+        boolean allPublicMethods = this.allPublicMethods || other.allPublicMethods;
+
+        boolean allDeclaredConstructors = this.allDeclaredConstructors || other.allDeclaredConstructors;
+        boolean allPublicConstructors = this.allPublicConstructors || other.allPublicConstructors;
+
+        boolean allDeclaredClasses = this.allDeclaredClasses || other.allDeclaredClasses;
+        boolean allPublicClasses = this.allPublicClasses || other.allPublicClasses;
+
         TreeSet<MethodUsage> newMethods = new TreeSet<>(this.methods);
         newMethods.addAll(other.methods);
+
         TreeSet<FieldUsage> newFields = new TreeSet<>(this.fields);
         newFields.addAll(other.fields);
-        return new ClassUsage(this.name, newMethods, newFields, declaredFields, declaredMethods, declaredConstructors);
+
+        return new ClassUsage(this.name, newMethods, newFields,
+                allDeclaredFields, allPublicFields,
+                allDeclaredMethods, allPublicMethods,
+                allDeclaredConstructors, allPublicConstructors,
+                allDeclaredClasses, allPublicClasses);
     }
 }
